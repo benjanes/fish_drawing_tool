@@ -13,6 +13,10 @@ class CubicBezier {
     this.ctx = ctx;
   }
 
+  withDifferentPointCount(pts) {
+    return new CubicBezier(this.start, this.cp1, this.cp2, this.end, this.ctx, pts);
+  }
+
   draw() {
     this.ctx.beginPath();
     this.ctx.moveTo(this.start.x, this.start.y)
