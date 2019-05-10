@@ -5,37 +5,42 @@ const height = canvas.offsetHeight * 4;
 canvas.width = width;
 canvas.height = height;
 
-const strokeRGB = '0,0,255';
-const bgColor = 'rgb(40,40,0)';
-ctx.lineWidth = 5;
+// const strokeRGB = '0,100,200';
+const strokeRGB = '225,225,60';
+const bgColor = 'rgb(40,40,80)';
+ctx.lineWidth = 6;
 ctx.lineCap = 'round';
 ctx.fillStyle = bgColor;
 ctx.strokeStyle = `rgb(${strokeRGB})`;
 
-const x1 = width * 0.15; // left side of the fish "body"
-const x2 = width * 0.95; // right side of the fish "body" (tip of the nose)
+const lineWidthOctave = 16000;
+const minLineWidth = 0;
+const lineWidthMagnitude = 36;
+
+const x1 = width * 0.45; // left side of the fish "body"
+const x2 = width * 0.1; // right side of the fish "body" (tip of the nose)
 const midY = height * 0.5; // center point in y dimension
 
-const cpDiff = 0.25; // determines x of control points for fish body curvature
-const cpYDiff = 0.3; // determines y of control points for fish body curvature
+const cpDiff = 0.4; // determines x of control points for fish body curvature
+const cpYDiff = 0.35; // determines y of control points for fish body curvature
 
-const headSpace = 0.25; // how far back from nose should scales start? proportion of the body's curve
-const tailSpace = 0.1; // how far back from body's end should tail start? proportion of the body's curve
-const scaleRowCount = 40; // how many scale rows
+const headSpace = 0.05; // how far back from nose should scales start? proportion of the body's curve
+const tailSpace = 0.07; // how far back from body's end should tail start? proportion of the body's curve
+const scaleRowCount = 20; // how many scale rows
 const ptsOnScale = 12; // how many points used to build a scale's Polyline
 
-const tailLines = 20; // how many lines used to draw the tail
-const finLines = 12; // how many lines used to draw top and bottom fins
+const tailLines = 60; // how many lines used to draw the tail
+const finLines = 40; // how many lines used to draw top and bottom fins
 
-const topFinStart = 0.55; // starting point of top fin, proportion of body's curve
-const topFinEnd = 0.35; // ending point of top fin, proportion of body's curve
+const topFinStart = 0.1; // starting point of top fin, proportion of body's curve
+const topFinEnd = 0.4; // ending point of top fin, proportion of body's curve
 
-const btmFinStart = 0.55; // starting point of bottom fin, proportion of body's curve
-const btmFinEnd = 0.35; // ending point of bottom fin, proportion of body's curve
+const btmFinStart = 0.1; // starting point of bottom fin, proportion of body's curve
+const btmFinEnd = 0.4; // ending point of bottom fin, proportion of body's curve
 
-const scaleRowCurvature = -0.1; // further from 0 is curvier rows
-const scaleRelativeDimension = 1.4; // scale "radius" as a proportion of the distance between rows
-const curvinessRelativeToLength = 1;
+const scaleRowCurvature = -0.9; // further from 0 is curvier rows
+const scaleRelativeDimension = 2; // scale "radius" as a proportion of the distance between rows
+const curvinessRelativeToLength = 2;
 
 const curveTop = new CubicBezier({ x: x1, y: midY }, { x: x1 + cpDiff * width, y: midY - cpYDiff * height }, { x: x2 - cpDiff * width, y: midY - cpYDiff * height }, { x: x2, y: midY }, ctx);
 const curveBtm = new CubicBezier({ x: x1, y: midY }, { x: x1 + cpDiff * width, y: midY + cpYDiff * height }, { x: x2 - cpDiff * width, y: midY + cpYDiff * height }, { x: x2, y: midY }, ctx);
@@ -51,10 +56,10 @@ drawFishy();
 */
 function drawFishy() {
   ctx.fillRect(0, 0, width, height);
-  drawTail();
+  // drawTail();
+  // drawHead();
   drawTopFin();
   drawBtmFin();
-  drawHead();
 
   scaleRows.reverse();
   scaleRows.forEach((row) => {
@@ -64,6 +69,9 @@ function drawFishy() {
 
 function drawScale(scale) {
   const angleStep = Math.PI * (1 / (ptsOnScale - 1));
+  const randomLineWidthRefCoord = Math.random() * 1000;
+  const randomOpacityRefCoord = Math.random() * 1000;
+
   const points = Array(ptsOnScale).fill(null).map((_, i) => {
     const angle = -angleStep * i;
 
@@ -71,11 +79,20 @@ function drawScale(scale) {
     const adjustment = noise.simplex2(refPoint.x / 300, refPoint.y / 300);
     const adjustedPt = adjustPointRelativeToPointOfRotation(refPoint, scale.center, adjustment, 0.6);
 
-    return adjustedPt;
+    const lineWidthAdjust = noise.simplex2(randomLineWidthRefCoord + (i * 10) / lineWidthOctave, randomLineWidthRefCoord + (i * 10) / lineWidthOctave);
+    const opacityAdjust = noise.simplex2(randomOpacityRefCoord + (i * 40) / 300, randomOpacityRefCoord + (i * 40) / 300);
+
+    const lineWidth = (lineWidthAdjust * lineWidthMagnitude) + (lineWidthMagnitude + minLineWidth);
+    const opacity = Math.pow((opacityAdjust + 1) / 2, 10);
+
+    return { ...adjustedPt, lineWidth, opacity };
   });
 
   const line = new Polyline(points, ctx);
-  line.draw({ fill: bgColor, rgb: strokeRGB });
+  // const c = Math.floor(Math.random() * 255);
+  // console.log(blueness)
+  // line.draw({ fill: bgColor, rgb: `0,0,${blueness}` });
+  line.draw({ /*fill: bgColor,*/ rgb: '255,0,0' });
 }
 
 function adjustPointRelativeToPointOfRotation(p, center, adjustment, adjustmentFactor) {
@@ -121,12 +138,25 @@ function makeScaleRow(idx) {
 function drawHead() {
   // popping and/or shifting gives a bit more control over the points used to draw the head.
   // the only really necesssary array manipulation is the pop on the topPts array. otherwise get an extra pointy snout.
-  const topPts = adjustPoints(getPtsOnCurve(20)(curveTop, 1, 1 - headSpace), 6, 100);
+  const topPts = adjustPoints(getPtsOnCurve(20)(curveTop, 1, 1 - headSpace), 6, 300);
   // topPts.shift();
   topPts.pop();
-  const btmPts = adjustPoints(getPtsOnCurve(20)(curveBtm, 1 - headSpace, 1), 6, 100);
+  const btmPts = adjustPoints(getPtsOnCurve(20)(curveBtm, 1 - headSpace, 1), 6, 300);
   // btmPts.pop();
-  const headLine = new Polyline(topPts.concat(btmPts), ctx);
+
+  const randomLineWidthRefCoord = Math.random() * 1000;
+  const randomOpacityRefCoord = Math.random() * 1000;
+
+  const points = topPts.concat(btmPts).map((pt, i) => {
+    const lineWidthAdjust = noise.simplex2(randomLineWidthRefCoord + (i * 10) / lineWidthOctave, randomLineWidthRefCoord + (i * 10) / lineWidthOctave);
+    const opacityAdjust = noise.simplex2(randomOpacityRefCoord + (i * 10) / 200, randomOpacityRefCoord + (i * 10) / 200);
+
+    const lineWidth = (lineWidthAdjust * lineWidthMagnitude) + (lineWidthMagnitude + minLineWidth);
+    const opacity = Math.pow((opacityAdjust + 1) / 2, 0.9);
+    return { ...pt, lineWidth, opacity };
+  })
+
+  const headLine = new Polyline(points, ctx);
   headLine.draw({ isClosed: false, rgb: strokeRGB });
 }
 
@@ -135,19 +165,19 @@ function drawTail() {
   // const btmPt = curveBtm.findPointAtDistance(tailSpace);
   // const x = topPt.x - ((scaleRowCurvature * (x1 - x2) / 0.5) * ((btmPt.y - topPt.y) / height * curvinessRelativeToLength));
   // const curve = new CubicBezier(topPt, { x, y: topPt.y + (scaleRowCurvature * (x2 - x1) * 0.1) }, { x, y: btmPt.y - (scaleRowCurvature * (x2 - x1) * 0.1) }, btmPt, ctx, tailLines);
-  const curve = scaleRows[scaleRows.length - 1].curve.withDifferentPointCount(tailLines);
+  const curve = scaleRows[0].curve.withDifferentPointCount(tailLines);
   // console.log(curve);
-  drawFin(curve.points, { min: 100, max: 400 }, { min: Math.PI * (5 / 4), max: Math.PI * (3 / 4) }, midPointMinimumAdjust(1), linearAdjust(1));
+  drawFin(curve.points, { min: 400, max: 400 }, { min: -Math.PI * 1, max: Math.PI * 1 }, midPointMinimumAdjust(2), linearAdjust(1));
 }
 
 function drawTopFin() {
   const points = getPtsOnCurve(finLines)(curveTop, topFinStart, topFinEnd);
-  drawFin(points, { min: 10, max: 400 }, { min: Math.PI * 1.5, max: Math.PI * 1.3 }, linearAdjust(1.5), linearAdjust(1));
+  drawFin(points, { min: 450, max: 600 }, { /*min: Math.PI * 2.62, max: Math.PI * 0.7*/ min: Math.PI * 0, max: Math.PI * 1 }, linearAdjust(0.1), linearAdjust(1));
 }
 
 function drawBtmFin() {
   const points = getPtsOnCurve(finLines)(curveBtm, btmFinStart, btmFinEnd);
-  drawFin(points, { min: 10, max: 400 }, { min: Math.PI * 0.5, max: Math.PI * 0.7 }, linearAdjust(1.5), linearAdjust(1));
+  drawFin(points, { min: 400, max: 800 }, { min: Math.PI * 0, max: Math.PI * 1 }, linearAdjust(0.4), linearAdjust(1));
 }
 
 // a range is of type { min: number, max: number }
@@ -159,9 +189,19 @@ function drawFin(points, lengthRange, angleRange, lengthAdjust, angleAdjust) {
     const pointToRotate = { x: points[i].x + length, y: points[i].y };
     const endPoint = rotatePoint(pointToRotate, angle, points[i]);
 
-
     const finLine = new CubicBezier(points[i], points[i], endPoint, endPoint, ctx);
-    const finPoints = adjustPoints(finLine.points, 20, 200);
+
+    const randomLineWidthRefCoord = Math.random() * 1000;
+    const randomOpacityRefCoord = Math.random() * 1000;
+
+    const finPoints = adjustPoints(finLine.points, 20, 200).map((pt, i) => {
+      const lineWidthAdjust = noise.simplex2(randomLineWidthRefCoord + (i * 10) / lineWidthOctave, randomLineWidthRefCoord + (i * 10) / lineWidthOctave);
+      const opacityAdjust = noise.simplex2(randomOpacityRefCoord + (i * 40) / 300, randomOpacityRefCoord + (i * 40) / 300);
+
+      const lineWidth = (lineWidthAdjust * lineWidthMagnitude) + (lineWidthMagnitude + minLineWidth);
+      const opacity = Math.pow((opacityAdjust + 1) / 2, 5);
+      return { ...pt, lineWidth, opacity };
+    });
     const fin = new Polyline(finPoints, ctx);
     fin.draw({ isClosed: false, rgb: strokeRGB });
     // finLine.draw();
@@ -231,6 +271,6 @@ function linearAdjust(factor) {
   return (idx, pointCount, range) => {
     const proportion = idx / (pointCount - 1);
 
-    return Math.pow((proportion) / 1, factor) * (range.max - range.min) + range.min;
+    return Math.pow((proportion), factor) * (range.max - range.min) + range.min;
   };
 }
