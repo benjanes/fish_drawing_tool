@@ -6,16 +6,16 @@ canvas.width = width;
 canvas.height = height;
 
 // const strokeRGB = '0,100,200';
-const strokeRGB = '225,225,60';
-const bgColor = 'rgb(40,40,80)';
+const strokeRGB = '255,255,0';
+const bgColor = 'rgb(30,30,30)';
 ctx.lineWidth = 6;
 ctx.lineCap = 'round';
 ctx.fillStyle = bgColor;
 ctx.strokeStyle = `rgb(${strokeRGB})`;
 
-const lineWidthOctave = 16000;
-const minLineWidth = 0;
-const lineWidthMagnitude = 36;
+const lineWidthOctave = 10;
+const minLineWidth = 10;
+const lineWidthMagnitude = 16;
 
 const x1 = width * 0.45; // left side of the fish "body"
 const x2 = width * 0.1; // right side of the fish "body" (tip of the nose)
@@ -47,10 +47,94 @@ const curveBtm = new CubicBezier({ x: x1, y: midY }, { x: x1 + cpDiff * width, y
 const scaleBaseDimension = (1 - headSpace - tailSpace) * (1 / scaleRowCount) * scaleRelativeDimension * curveTop.length;
 const scaleRows = Array(scaleRowCount).fill(null).map((_, i) => makeScaleRow(i));
 
+const lineCount = 150;
+
 // bring the NOISE
 noise.seed(Math.random());
 
-drawFishy();
+ctx.fillRect(0, 0, width, height);
+
+drawStarburst({ x: midY, y: midY }, 600)
+
+function drawStarburst(ctr, radius) {
+
+  const arcs = [0, 1, 2, 3].map(createArc(ctr, radius));
+  arcs.forEach((arc, idx) => {
+    // arc.draw({ rgb: strokeRGB })
+    if (idx === 0) {
+      drawLinesOffArc(arc.points, { min: 1800, max: 0 }, { min: Math.PI * 6, max: Math.PI * -1.5 }, linearAdjust(0.5), linearAdjust(0.5), '250,250,0', 0.04)
+    } else if (idx === 1) {
+      drawLinesOffArc(arc.points, { min: 1800, max: 0 }, { min: Math.PI * 4, max: Math.PI * -0.5 }, linearAdjust(0.5), linearAdjust(1), '240,100,0', 0.06)
+    } else if (idx === 2) {
+      drawLinesOffArc(arc.points, { min: 1800, max: 0 }, { min: Math.PI * 5, max: Math.PI * -2.5 }, linearAdjust(0.5), linearAdjust(0.5), '250,250,0', 0.04)
+    } else {
+      drawLinesOffArc(arc.points, { min: 1800, max: 0 }, { min: Math.PI * 3, max: Math.PI * -1.5 }, linearAdjust(0.5), linearAdjust(1), '240,100,0', 0.06)
+    }
+  });
+}
+
+function createArc({ x, y }, r) {
+  return (i) => {
+    let start, cp1, cp2, end;
+    const c = r * 0.551915;
+    if (i === 0) {
+      start = { x, y: y + r };
+      cp1 = { x: x + c, y: y + r };
+      cp2 = { x: x + r, y: y + c };
+      end = { x: x + r, y };
+    } else if (i === 1) {
+      start = { x: x + r, y };
+      cp1 = { x: x + r, y: y - c };
+      cp2 = { x: x + c, y: y - r };
+      end = { x, y: y - r };
+    } else if (i === 2) {
+      start = { x, y: y- r };
+      cp1 = { x: x - c, y: y - r };
+      cp2 = { x: x - r, y: y - c };
+      end = { x: x - r, y };
+    } else {
+      start = { x: x - r, y  };
+      cp1 = { x: x - r, y: y + c };
+      cp2 = { x: x - c, y: y + r };
+      end = { x, y: y + r };
+    }
+    return (new CubicBezier(start, cp1, cp2, end, ctx)).withDifferentPointCount(lineCount);
+  }
+}
+
+function drawLinesOffArc(points, lengthRange, angleRange, lengthAdjust, angleAdjust, stroke, opacity) {
+  for (let i = 0; i < points.length; i++) {
+    const length = lengthAdjust(i, points.length, lengthRange);
+    const angle = angleAdjust(i, points.length, angleRange);
+    const pointToRotate = { x: points[i].x + length, y: points[i].y };
+    const endPoint = rotatePoint(pointToRotate, angle, points[i]);
+
+    const line = new CubicBezier(points[i], points[i], endPoint, endPoint, ctx);
+
+    const randomLineWidthRefCoord = Math.random() * 1000;
+    const randomOpacityRefCoord = Math.random() * 1000;
+
+    const linePoints = /*adjustPoints(line.points, 20, 200)*/line.points.map((pt, i) => {
+      const lineWidthAdjust = noise.simplex2(randomLineWidthRefCoord + (i * 10) / lineWidthOctave, randomLineWidthRefCoord + (i * 10) / lineWidthOctave);
+      // const opacityAdjust = noise.simplex2(randomOpacityRefCoord + (i * 40) / 300, randomOpacityRefCoord + (i * 40) / 300);
+      //
+      const lineWidth = (lineWidthAdjust * lineWidthMagnitude) + (lineWidthMagnitude + minLineWidth);
+      // const opacity = Math.pow((opacityAdjust + 1) / 2, 8);
+      return { ...pt, lineWidth, opacity };
+    });
+    const adjustedLine = new Polyline(linePoints, ctx);
+    adjustedLine.draw({ isClosed: false, rgb: stroke });
+    // finLine.draw();
+    //
+    // ctx.beginPath();
+    // ctx.moveTo(points[i].x, points[i].y);
+    // ctx.lineTo(endPoint.x, endPoint.y);
+    // ctx.stroke();
+    // ctx.closePath();
+  }
+}
+
+// drawFishy();
 /*
   Drawing Fns
 */
