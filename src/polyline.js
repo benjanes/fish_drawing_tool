@@ -35,7 +35,7 @@ class Polyline {
 
       if (points[i].lineWidth) {
         startLineWidth = points[i].lineWidth;
-        lineWidthStep = (points[i + 1].lineWidth - startLineWidth) / numSegments;
+        // lineWidthStep = (points[i + 1].lineWidth - startLineWidth) / numSegments;
       }
 
       if (points[i].opacity) {
@@ -62,7 +62,7 @@ class Polyline {
         newPoints.push({
           x,
           y,
-          lineWidth: startLineWidth ? startLineWidth + t * lineWidthStep : null,
+          lineWidth: startLineWidth, //? startLineWidth + t * lineWidthStep : null,
           opacity: startOpacity ? startOpacity + t * opacityStep : null,
         });
       }
@@ -71,27 +71,34 @@ class Polyline {
   }
 
   [drawLines](pts, rgb, fill) {
-    this.ctx.lineCap = 'round';
+    this.ctx.lineCap = 'square';
     this.ctx.strokeStyle = `rgb(${rgb})`;
 
     // only do the fill part in this step
-    if (fill) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(pts[0].x, pts[0].y)
-      for (let i = 1; i < pts.length; i++) {
-        this.ctx.lineTo(pts[i].x, pts[i].y);
-      }
-
-      this.ctx.fillStyle = fill;
-      this.ctx.fill();
-      this.ctx.closePath();
-    }
+    // if (fill) {
+    //   this.ctx.beginPath();
+    //   this.ctx.moveTo(pts[0].x, pts[0].y)
+    //   for (let i = 1; i < pts.length; i++) {
+    //     this.ctx.lineTo(pts[i].x, pts[i].y);
+    //   }
+    //
+    //   this.ctx.fillStyle = fill;
+    //   this.ctx.fill();
+    //   this.ctx.closePath();
+    // }
 
     // two iterations, but this allows for drawing a "variant width" stroke over the filled polygon
     for (let i = 1; i < pts.length; i++) {
-      if (pts[i].lineWidth) this.ctx.lineWidth = pts[i].lineWidth;
+      if (pts[i].lineWidth) {
+        this.ctx.lineWidth = pts[i].lineWidth;
+      } else {
+        this.ctx.lineWidth = 0;
+      }
       if (pts[i].opacity) {
-        this.ctx.strokeStyle = `rgb(${rgb},${pts[i].opacity.toFixed(3)})`;
+        this.ctx.strokeStyle = `rgba(${rgb},${pts[i].opacity.toFixed(3)})`;
+      }
+      if (!pts[i].lineWidth) {
+        this.ctx.strokeStyle = `rgba(0,0,0,0)`;
       }
 
       this.ctx.beginPath();
@@ -102,3 +109,5 @@ class Polyline {
     }
   }
 }
+
+module.exports = Polyline;

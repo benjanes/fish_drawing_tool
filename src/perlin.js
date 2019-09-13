@@ -16,8 +16,8 @@
  *
  */
 
-(function(global){
-  var module = global.noise = {};
+module.exports = (function(){
+  var module = {};
 
   function Grad(x, y, z) {
     this.x = x; this.y = y; this.z = z;
@@ -309,4 +309,5 @@
        v);
   };
 
-})(this);
+  return module;
+})();

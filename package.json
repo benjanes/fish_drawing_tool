@@ -1,0 +1,16 @@
+{
+  "name": "draw_fish",
+  "version": "1.0.0",
+  "description": "Draw some fishies to output images",
+  "main": "draw.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ben Janes",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^2.6.0",
+    "command-line-args": "^5.1.1",
+    "command-line-usage": "^6.0.2"
+  }
+}

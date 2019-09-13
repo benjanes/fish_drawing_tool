@@ -87,3 +87,5 @@ function cubicDistance(t, a, b, c, d) {
   + (c * 3 - c * 3 * t) * t2
   + d * t3;
 }
+
+module.exports = CubicBezier;
